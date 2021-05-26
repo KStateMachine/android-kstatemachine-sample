@@ -14,4 +14,10 @@ class MainFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return MainFragmentBinding.inflate(inflater, container, false).root
     }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        viewModel.currentState.observe(viewLifecycleOwner) {
+
+        }
+    }
 }

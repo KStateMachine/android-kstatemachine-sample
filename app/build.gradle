@@ -45,4 +45,5 @@ dependencies {
     implementation "com.google.android.material:material:$materialVersion"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation "io.insert-koin:koin-androidx-viewmodel:$koinVersion"
+    implementation "com.github.nsk90:kstatemachine:$kstatemachineVersion"
 }
