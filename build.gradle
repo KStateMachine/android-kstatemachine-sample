@@ -18,8 +18,22 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
     }
+}
+
+ext {
+    compileSdkVersion = 30
+    targetSdkVersion = 30
+    minSdkVersion = 23
+
+    // dependencies
+    coreVersion = "1.5.0"
+    appcompatVersion = "1.3.0"
+    constraintlayoutVersion = "2.0.4"
+    koinVersion = "2.2.2"
+    lifecycleVersion = "2.3.1"
+    startupVersion = "1.0.0"
+    materialVersion = "1.3.0"
 }
 
 task clean(type: Delete) {
