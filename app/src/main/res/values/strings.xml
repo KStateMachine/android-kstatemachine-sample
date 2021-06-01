@@ -3,4 +3,5 @@
     <string name="jump">jump</string>
     <string name="duck">duck</string>
     <string name="fire">fire</string>
+    <string name="ammo">Ammo: %d</string>
 </resources>

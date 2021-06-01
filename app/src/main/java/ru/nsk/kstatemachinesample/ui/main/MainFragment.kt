@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import ru.nsk.kstatemachinesample.R
 import ru.nsk.kstatemachinesample.databinding.MainFragmentBinding
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 
@@ -19,7 +20,7 @@ class MainFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = MainFragmentBinding.inflate(inflater, container, false)
         binding.logTextView.movementMethod = ScrollingMovementMethod()
-        log("note: To perform an air attack press Duck while jumping")
+        log("help: To perform an air attack press Duck while jumping")
         return binding.root
     }
 
@@ -36,6 +37,10 @@ class MainFragment : Fragment() {
         )
 
         viewModel.currentState.observe(viewLifecycleOwner) { log("State: " + it.name) }
+        viewModel.ammoLeft.observe(viewLifecycleOwner) {
+            binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
+            log("*")
+        }
     }
 
     private fun log(text: String) = binding.logTextView.append(text + System.lineSeparator())

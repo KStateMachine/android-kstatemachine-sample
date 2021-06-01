@@ -5,7 +5,16 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_margin="8dp"
     tools:context=".ui.main.MainFragment">
+
+    <TextView
+        android:id="@+id/ammoTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ammo"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/logTextView"
@@ -16,16 +25,16 @@
         app:layout_constraintBottom_toTopOf="@+id/linearLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/ammoTextView" />
 
     <LinearLayout
         android:id="@+id/linearLayout"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_width="wrap_content">
+        app:layout_constraintStart_toStartOf="parent">
 
         <Button
             android:id="@+id/duckButton"
@@ -45,10 +54,10 @@
 
         <Button
             android:id="@+id/fireButton"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/fire"
-            style="?android:attr/buttonBarButtonStyle" />
+            android:text="@string/fire" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
