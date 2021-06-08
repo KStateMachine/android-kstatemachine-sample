@@ -4,4 +4,6 @@
     <string name="duck">duck</string>
     <string name="fire">fire</string>
     <string name="ammo">Ammo: %d</string>
+    <string name="state">State: %s</string>
+    <string name="event">Event: %s</string>
 </resources>

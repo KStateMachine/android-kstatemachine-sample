@@ -1,5 +1,6 @@
 package ru.nsk.kstatemachinesample.ui.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,22 +10,30 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import ru.nsk.kstatemachine.*
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
-import ru.nsk.kstatemachinesample.ui.main.NinjaState.*
+import ru.nsk.kstatemachinesample.ui.main.HeroState.*
 import ru.nsk.kstatemachinesample.utils.singleShotTimer
 import ru.nsk.kstatemachinesample.utils.tickerFlow
 
 private const val JUMP_DURATION_MS = 2000L
-private const val INITIAL_AMMO = 30u
+private const val INITIAL_AMMO = 60u
 private const val SHOOTING_INTERVAL_MS = 100L
 
 class MainViewModel : ViewModel() {
-    private val _currentState = MutableLiveData<IState>()
-    val currentState: LiveData<IState> get() = _currentState
+    private val _controlEvent = MutableLiveData<ControlEvent>()
+    val controlEvent: LiveData<ControlEvent> get() = _controlEvent
 
-    private val _ammoLeft = MutableLiveData<UInt>()
+    private val _currentState = MutableLiveData<HeroState>()
+    val currentState: LiveData<HeroState> get() = _currentState
+
+    private val _activeStates = MutableLiveData<List<HeroState>>()
+    val activeStates: LiveData<List<HeroState>> get() = _activeStates
+
+    private val _ammoLeft = MutableLiveData(INITIAL_AMMO)
     val ammoLeft: LiveData<UInt> get() = _ammoLeft
 
-    private val machine = createStateMachine("Ninja", ChildMode.PARALLEL) {
+    private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
+        logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
+
         state("Movement") {
             val standing = addInitialState(Standing())
             val jumping = addState(Jumping())
@@ -39,7 +48,7 @@ class MainViewModel : ViewModel() {
             jumping {
                 onEntry {
                     viewModelScope.singleShotTimer(JUMP_DURATION_MS) {
-                        machine.processEvent(JumpCompleteEvent)
+                        sendEvent(JumpCompleteEvent)
                     }
                 }
                 transition<DuckPressEvent>("AirAttack") { targetState = airAttacking }
@@ -83,7 +92,7 @@ class MainViewModel : ViewModel() {
                     shootingTimer = viewModelScope.launch {
                         tickerFlow(SHOOTING_INTERVAL_MS).collect {
                             if (ammoLeft == 0u)
-                                machine.processEvent(OutOfAmmoEvent)
+                                sendEvent(OutOfAmmoEvent)
                             else
                                 (--ammoLeft).also { _ammoLeft.value = it }
                         }
@@ -93,10 +102,16 @@ class MainViewModel : ViewModel() {
             }
         }
 
-        onStateChanged { _currentState.value = it }
+        onStateChanged {
+            _activeStates.value = activeStates().filterIsInstance<HeroState>()
+            if (it is HeroState) _currentState.value = it
+        }
     }
 
-    fun processEvent(event: ControlEvent) = machine.processEvent(event)
+    fun sendEvent(event: ControlEvent) {
+        _controlEvent.value = event
+        machine.processEvent(event)
+    }
 }
 
 sealed class ControlEvent : Event {
@@ -109,18 +124,18 @@ sealed class ControlEvent : Event {
     object OutOfAmmoEvent : ControlEvent()
 }
 
-sealed class NinjaState(name: String) : DefaultState(name) {
-    class Standing : NinjaState("Standing")
-    class Jumping : NinjaState("Jumping")
-    class Ducking : NinjaState("Ducking")
-    class AirAttacking : NinjaState("AirAttacking") {
+sealed class HeroState(name: String) : DefaultState(name) {
+    class Standing : HeroState("Standing")
+    class Jumping : HeroState("Jumping")
+    class Ducking : HeroState("Ducking")
+    class AirAttacking : HeroState("AirAttacking") {
         var isDownPressed = true
     }
 
-    class Shooting : NinjaState("Shooting") {
+    class Shooting : HeroState("Shooting") {
         var ammoLeft = INITIAL_AMMO
         lateinit var shootingTimer: Job
     }
 
-    class NotShooting : NinjaState("NotShooting")
+    class NotShooting : HeroState("NotShooting")
 }
