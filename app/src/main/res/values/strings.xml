@@ -6,4 +6,5 @@
     <string name="ammo">Ammo: %d</string>
     <string name="state">State: %s</string>
     <string name="event">Event: %s</string>
+    <string name="reload_ammo">reload ammo</string>
 </resources>

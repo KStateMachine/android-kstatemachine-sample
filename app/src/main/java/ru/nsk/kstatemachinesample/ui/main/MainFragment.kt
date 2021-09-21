@@ -3,7 +3,6 @@ package ru.nsk.kstatemachinesample.ui.main
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -46,6 +45,7 @@ class MainFragment : Fragment() {
         binding.jumpButton.setOnTouchListener(
             TouchListener(lifecycle, onDown = { JumpPressEvent.send() }, onUp = { /* empty */ })
         )
+        binding.reloadAmmoButton.setOnClickListener { viewModel.reloadAmmo() }
 
         viewModel.controlEventChanged.observe(viewLifecycleOwner) {
             log(getString(R.string.event, it::class.simpleName))
@@ -66,8 +66,8 @@ class MainFragment : Fragment() {
 
         viewModel.ammoLeft.observe(viewLifecycleOwner) {
             binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
-            log("*") // in real app we should not log LiveData notifications to avoid duplicates on config changes
         }
+        viewModel.ammoDecremented.observe(viewLifecycleOwner) { log("*") }
     }
 
     private fun setHeroDrawable(@DrawableRes id: Int) =

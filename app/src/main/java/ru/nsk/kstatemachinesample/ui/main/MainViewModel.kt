@@ -16,8 +16,8 @@ import ru.nsk.kstatemachinesample.utils.singleShotTimer
 import ru.nsk.kstatemachinesample.utils.tickerFlow
 
 private const val JUMP_DURATION_MS = 1000L
-private const val INITIAL_AMMO = 60u
-private const val SHOOTING_INTERVAL_MS = 100L
+private const val INITIAL_AMMO = 40u
+private const val SHOOTING_INTERVAL_MS = 50L
 
 class MainViewModel : ViewModel() {
     private val _controlEventChanged = SingleLiveEvent<ControlEvent>()
@@ -31,6 +31,9 @@ class MainViewModel : ViewModel() {
 
     private val _ammoLeft = MutableLiveData(INITIAL_AMMO)
     val ammoLeft: LiveData<UInt> get() = _ammoLeft
+
+    private val _ammoDecremented = SingleLiveEvent<Unit>()
+    val ammoDecremented: LiveData<Unit> get() = _ammoDecremented
 
     private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
         logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
@@ -77,7 +80,7 @@ class MainViewModel : ViewModel() {
 
         state("Fire") {
             val notShooting = addInitialState(NotShooting())
-            val shooting = addState(Shooting())
+            val shooting = addState(Shooting(_ammoLeft, _ammoDecremented))
 
             notShooting {
                 transition<FirePressEvent> {
@@ -95,7 +98,7 @@ class MainViewModel : ViewModel() {
                             if (ammoLeft == 0u)
                                 sendEvent(OutOfAmmoEvent)
                             else
-                                (--ammoLeft).also { _ammoLeft.value = it }
+                                decrement()
                         }
                     }
                 }
@@ -112,6 +115,11 @@ class MainViewModel : ViewModel() {
     fun sendEvent(event: ControlEvent) {
         _controlEventChanged.value = event
         machine.processEvent(event)
+    }
+
+    fun reloadAmmo() {
+        val state = machine.requireState("Fire").requireState(Shooting.NAME) as Shooting
+        state.reload()
     }
 }
 
@@ -133,9 +141,29 @@ sealed class HeroState(name: String) : DefaultState(name) {
         var isDownPressed = true
     }
 
-    class Shooting : HeroState("Shooting") {
-        var ammoLeft = INITIAL_AMMO
+    class Shooting(
+        private val ammoLeftLiveData: MutableLiveData<UInt>,
+        private val ammoDecremented: SingleLiveEvent<Unit>,
+    ) : HeroState(NAME) {
+        private var _ammoLeft = INITIAL_AMMO
+        val ammoLeft get() = _ammoLeft
+
         lateinit var shootingTimer: Job
+
+        fun decrement() {
+            --_ammoLeft
+            ammoLeftLiveData.value = _ammoLeft
+            ammoDecremented.call()
+        }
+
+        fun reload() {
+            _ammoLeft = INITIAL_AMMO
+            ammoLeftLiveData.value = _ammoLeft
+        }
+
+        companion object {
+            const val NAME = "Shooting"
+        }
     }
 
     class NotShooting : HeroState("NotShooting")
