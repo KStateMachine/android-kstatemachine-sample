@@ -11,19 +11,20 @@ import kotlinx.coroutines.launch
 import ru.nsk.kstatemachine.*
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
+import ru.nsk.kstatemachinesample.utils.SingleLiveEvent
 import ru.nsk.kstatemachinesample.utils.singleShotTimer
 import ru.nsk.kstatemachinesample.utils.tickerFlow
 
-private const val JUMP_DURATION_MS = 2000L
+private const val JUMP_DURATION_MS = 1000L
 private const val INITIAL_AMMO = 60u
 private const val SHOOTING_INTERVAL_MS = 100L
 
 class MainViewModel : ViewModel() {
-    private val _controlEvent = MutableLiveData<ControlEvent>()
-    val controlEvent: LiveData<ControlEvent> get() = _controlEvent
+    private val _controlEventChanged = SingleLiveEvent<ControlEvent>()
+    val controlEventChanged: LiveData<ControlEvent> get() = _controlEventChanged
 
-    private val _currentState = MutableLiveData<HeroState>()
-    val currentState: LiveData<HeroState> get() = _currentState
+    private val _currentStateChanged = SingleLiveEvent<HeroState>()
+    val currentStateChanged: LiveData<HeroState> get() = _currentStateChanged
 
     private val _activeStates = MutableLiveData<List<HeroState>>()
     val activeStates: LiveData<List<HeroState>> get() = _activeStates
@@ -104,12 +105,12 @@ class MainViewModel : ViewModel() {
 
         onStateChanged {
             _activeStates.value = activeStates().filterIsInstance<HeroState>()
-            if (it is HeroState) _currentState.value = it
+            if (it is HeroState) _currentStateChanged.value = it
         }
     }
 
     fun sendEvent(event: ControlEvent) {
-        _controlEvent.value = event
+        _controlEventChanged.value = event
         machine.processEvent(event)
     }
 }

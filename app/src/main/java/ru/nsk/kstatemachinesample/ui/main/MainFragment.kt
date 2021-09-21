@@ -15,6 +15,7 @@ import ru.nsk.kstatemachinesample.R
 import ru.nsk.kstatemachinesample.databinding.MainFragmentBinding
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
+import java.lang.System.lineSeparator
 
 class MainFragment : Fragment() {
     private val viewModel by viewModel<MainViewModel>()
@@ -39,8 +40,10 @@ class MainFragment : Fragment() {
             TouchListener(onDown = { JumpPressEvent.send() }, onUp = { /* empty */ })
         )
 
-        viewModel.controlEvent.observe(viewLifecycleOwner) { log(getString(R.string.event, it::class.simpleName)) }
-        viewModel.currentState.observe(viewLifecycleOwner) { log(getString(R.string.state, it.name)) }
+        viewModel.controlEventChanged.observe(viewLifecycleOwner) {
+            log(getString(R.string.event, it::class.simpleName))
+        }
+        viewModel.currentStateChanged.observe(viewLifecycleOwner) { log(getString(R.string.state, it.name)) }
 
         viewModel.activeStates.observe(viewLifecycleOwner) {
             fun setDrawable(@DrawableRes id: Int, @DrawableRes idShooting: Int) =
@@ -56,14 +59,21 @@ class MainFragment : Fragment() {
 
         viewModel.ammoLeft.observe(viewLifecycleOwner) {
             binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
-            log("*")
+            log("*") // in real app we should not log LiveData notifications to avoid duplicates on config changes
         }
     }
 
     private fun setHeroDrawable(@DrawableRes id: Int) =
         binding.heroImageView.setImageDrawable(ContextCompat.getDrawable(requireContext(), id))
 
-    private fun log(text: String) = binding.logTextView.append(text + System.lineSeparator())
+    private fun log(text: String) = with(binding.logTextView) {
+        append(text + lineSeparator())
+        // scroll to bottom
+        layout?.let { layout ->
+            val scrollDelta = (layout.getLineBottom(lineCount - 1) - scrollY - height)
+            if (scrollDelta > 0) scrollBy(0, scrollDelta)
+        }
+    }
 
     private fun ControlEvent.send() = viewModel.sendEvent(this)
 }
