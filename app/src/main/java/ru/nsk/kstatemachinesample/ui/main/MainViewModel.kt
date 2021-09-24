@@ -118,7 +118,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun reloadAmmo() {
-        val state = machine.requireState("Fire").requireState(Shooting.NAME) as Shooting
+        val state = machine.requireState(Shooting.NAME) as Shooting
         state.reload()
     }
 }
