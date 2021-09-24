@@ -6,6 +6,10 @@ This is a sample Android application showing [kstatemachine](https://github.com/
 
 State machine is used to define and control Hero states like in 2D shooter games.
 
+<p align="center">
+  <img src="./images/android-app-sample.gif" alt="App sample" width="300"/>
+</p>
+
 ## How to build
 
 * Build with Android studio or run `./gradlew` script.
