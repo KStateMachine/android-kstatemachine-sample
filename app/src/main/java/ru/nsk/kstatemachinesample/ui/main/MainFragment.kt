@@ -4,21 +4,18 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import ru.nsk.kstatemachinesample.R
 import ru.nsk.kstatemachinesample.databinding.MainFragmentBinding
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
+import ru.nsk.kstatemachinesample.utils.TouchListener
 import java.lang.System.lineSeparator
 
 class MainFragment : Fragment() {
@@ -47,27 +44,31 @@ class MainFragment : Fragment() {
         )
         binding.reloadAmmoButton.setOnClickListener { viewModel.reloadAmmo() }
 
-        viewModel.controlEventChanged.observe(viewLifecycleOwner) {
-            log(getString(R.string.event, it::class.simpleName))
-        }
-        viewModel.currentStateChanged.observe(viewLifecycleOwner) { log(getString(R.string.state, it.name)) }
+        viewModel.modelData.observe(viewLifecycleOwner) { dataModel ->
+            dataModel.activeStates.let {
+                fun setDrawable(@DrawableRes id: Int, @DrawableRes idShooting: Int) =
+                    setHeroDrawable(if (it.hasState<Shooting>()) idShooting else id)
 
-        viewModel.activeStates.observe(viewLifecycleOwner) {
-            fun setDrawable(@DrawableRes id: Int, @DrawableRes idShooting: Int) =
-                setHeroDrawable(if (it.hasState<Shooting>()) idShooting else id)
+                when {
+                    it.hasState<Standing>() -> setDrawable(R.drawable.standing, R.drawable.standing_shooting)
+                    it.hasState<AirAttacking>() -> setDrawable(R.drawable.airattacking, R.drawable.airattacking_shooting)
+                    it.hasState<Ducking>() -> setDrawable(R.drawable.ducking, R.drawable.ducking_shooting)
+                    it.hasState<Jumping>() -> setDrawable(R.drawable.jumping, R.drawable.jumping_shooting)
+                }
+            }
 
-            when {
-                it.hasState<Standing>() -> setDrawable(R.drawable.standing, R.drawable.standing_shooting)
-                it.hasState<AirAttacking>() -> setDrawable(R.drawable.airattacking, R.drawable.airattacking_shooting)
-                it.hasState<Ducking>() -> setDrawable(R.drawable.ducking, R.drawable.ducking_shooting)
-                it.hasState<Jumping>() -> setDrawable(R.drawable.jumping, R.drawable.jumping_shooting)
+            dataModel.ammoLeft.let {
+                binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
             }
         }
 
-        viewModel.ammoLeft.observe(viewLifecycleOwner) {
-            binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
+        viewModel.modelEffect.observe(viewLifecycleOwner) {
+            when(it) {
+                ModelEffect.AmmoDecremented -> log("*")
+                is ModelEffect.CurrentStateChanged -> log(getString(R.string.state, it.state::class.simpleName))
+                is ModelEffect.ControlEventChanged -> log(getString(R.string.event, it.event::class.simpleName))
+            }
         }
-        viewModel.ammoDecremented.observe(viewLifecycleOwner) { log("*") }
     }
 
     private fun setHeroDrawable(@DrawableRes id: Int) =
@@ -89,33 +90,3 @@ private fun TextView.scrollToBottom() {
 }
 
 private inline fun <reified S : HeroState> List<HeroState>.hasState() = filterIsInstance<S>().isNotEmpty()
-
-private class TouchListener(lifecycle: Lifecycle, private val onDown: () -> Unit, private val onUp: () -> Unit) :
-    View.OnTouchListener, DefaultLifecycleObserver {
-    private var holding = false
-
-    init {
-        lifecycle.addObserver(this)
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(v: View, event: MotionEvent): Boolean {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN ->  {
-                holding = true
-                onDown()
-            }
-            MotionEvent.ACTION_UP -> {
-                holding = false
-                onUp()
-            }
-            else -> return false
-        }
-        return true
-    }
-
-    override fun onDestroy(owner: LifecycleOwner) {
-        // send release event if a view is destroying while a user holds it
-        if (holding) onUp()
-    }
-}

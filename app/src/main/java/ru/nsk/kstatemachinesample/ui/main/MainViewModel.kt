@@ -19,21 +19,26 @@ private const val JUMP_DURATION_MS = 1000L
 private const val INITIAL_AMMO = 40u
 private const val SHOOTING_INTERVAL_MS = 50L
 
+data class ModelData(val ammoLeft: UInt, val activeStates: List<HeroState>)
+
+sealed interface ModelEffect {
+    object AmmoDecremented : ModelEffect
+    class CurrentStateChanged(val state: HeroState) : ModelEffect
+    class ControlEventChanged(val event: ControlEvent) : ModelEffect
+}
+
 class MainViewModel : ViewModel() {
-    private val _controlEventChanged = SingleLiveEvent<ControlEvent>()
-    val controlEventChanged: LiveData<ControlEvent> get() = _controlEventChanged
+    private var data = ModelData(INITIAL_AMMO, emptyList())
+        set(value) {
+            field = value
+            _modelData.value = value
+        }
+    private val _modelData = MutableLiveData(data)
+    val modelData: LiveData<ModelData> get() = _modelData
 
-    private val _currentStateChanged = SingleLiveEvent<HeroState>()
-    val currentStateChanged: LiveData<HeroState> get() = _currentStateChanged
 
-    private val _activeStates = MutableLiveData<List<HeroState>>()
-    val activeStates: LiveData<List<HeroState>> get() = _activeStates
-
-    private val _ammoLeft = MutableLiveData(INITIAL_AMMO)
-    val ammoLeft: LiveData<UInt> get() = _ammoLeft
-
-    private val _ammoDecremented = SingleLiveEvent<Unit>()
-    val ammoDecremented: LiveData<Unit> get() = _ammoDecremented
+    private val _modelEffect = SingleLiveEvent<ModelEffect>()
+    val modelEffect: LiveData<ModelEffect> get() = _modelEffect
 
     private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
         logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
@@ -80,11 +85,11 @@ class MainViewModel : ViewModel() {
 
         state("Fire") {
             val notShooting = addInitialState(NotShooting())
-            val shooting = addState(Shooting(_ammoLeft, _ammoDecremented))
+            val shooting = addState(Shooting())
 
             notShooting {
                 transition<FirePressEvent> {
-                    guard = { shooting.ammoLeft > 0u }
+                    guard = { data.ammoLeft > 0u }
                     targetState = shooting
                 }
             }
@@ -95,10 +100,10 @@ class MainViewModel : ViewModel() {
                 onEntry {
                     shootingTimer = viewModelScope.launch {
                         tickerFlow(SHOOTING_INTERVAL_MS).collect {
-                            if (ammoLeft == 0u)
+                            if (data.ammoLeft == 0u)
                                 sendEvent(OutOfAmmoEvent)
                             else
-                                decrement()
+                                decrementAmmo()
                         }
                     }
                 }
@@ -107,64 +112,46 @@ class MainViewModel : ViewModel() {
         }
 
         onStateChanged {
-            _activeStates.value = activeStates().filterIsInstance<HeroState>()
-            if (it is HeroState) _currentStateChanged.value = it
+            data = data.copy(activeStates = activeStates().filterIsInstance<HeroState>())
+            if (it is HeroState)
+                _modelEffect.value = ModelEffect.CurrentStateChanged(it)
         }
     }
 
     fun sendEvent(event: ControlEvent) {
-        _controlEventChanged.value = event
+        _modelEffect.value = ModelEffect.ControlEventChanged(event)
         machine.processEvent(event)
     }
 
     fun reloadAmmo() {
-        val state = machine.requireState(Shooting.NAME) as Shooting
-        state.reload()
+        data = data.copy(ammoLeft = INITIAL_AMMO)
+    }
+
+    private fun decrementAmmo() {
+        data = data.copy(ammoLeft = data.ammoLeft - 1u)
+        _modelEffect.value = ModelEffect.AmmoDecremented
     }
 }
 
-sealed class ControlEvent : Event {
-    object JumpPressEvent : ControlEvent()
-    object JumpCompleteEvent : ControlEvent()
-    object DuckPressEvent : ControlEvent()
-    object DuckReleaseEvent : ControlEvent()
-    object FirePressEvent : ControlEvent()
-    object FireReleaseEvent : ControlEvent()
-    object OutOfAmmoEvent : ControlEvent()
+sealed interface ControlEvent : Event {
+    object JumpPressEvent : ControlEvent
+    object JumpCompleteEvent : ControlEvent
+    object DuckPressEvent : ControlEvent
+    object DuckReleaseEvent : ControlEvent
+    object FirePressEvent : ControlEvent
+    object FireReleaseEvent : ControlEvent
 }
+private object OutOfAmmoEvent : ControlEvent
 
-sealed class HeroState(name: String) : DefaultState(name) {
-    class Standing : HeroState("Standing")
-    class Jumping : HeroState("Jumping")
-    class Ducking : HeroState("Ducking")
-    class AirAttacking : HeroState("AirAttacking") {
+sealed class HeroState : DefaultState() {
+    class Standing : HeroState()
+    class Jumping : HeroState()
+    class Ducking : HeroState()
+    class AirAttacking : HeroState() {
         var isDownPressed = true
     }
-
-    class Shooting(
-        private val ammoLeftLiveData: MutableLiveData<UInt>,
-        private val ammoDecremented: SingleLiveEvent<Unit>,
-    ) : HeroState(NAME) {
-        private var _ammoLeft = INITIAL_AMMO
-        val ammoLeft get() = _ammoLeft
-
+    class NotShooting : HeroState()
+    class Shooting : HeroState() {
         lateinit var shootingTimer: Job
-
-        fun decrement() {
-            --_ammoLeft
-            ammoLeftLiveData.value = _ammoLeft
-            ammoDecremented.call()
-        }
-
-        fun reload() {
-            _ammoLeft = INITIAL_AMMO
-            ammoLeftLiveData.value = _ammoLeft
-        }
-
-        companion object {
-            const val NAME = "Shooting"
-        }
     }
-
-    class NotShooting : HeroState("NotShooting")
 }
