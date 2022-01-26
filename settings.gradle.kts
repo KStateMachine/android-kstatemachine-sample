@@ -1,2 +1,2 @@
 rootProject.name = "KStateMachine Sample"
-include ':app'
+include(":app")
