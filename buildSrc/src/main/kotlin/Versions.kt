@@ -1,6 +1,6 @@
 object Versions {
     const val kotlin = "1.6.10"
-    const val gradle = "7.1.0"
+    const val androidGradlePlugin = "7.1.2"
 
     // dependencies
     const val core = "1.7.0"
@@ -10,5 +10,5 @@ object Versions {
     const val lifecycle = "2.4.0"
     const val startup = "1.1.0"
     const val material = "1.5.0"
-    const val kStateMachine = "0.9.0"
+    const val kStateMachine = "0.9.3"
 }

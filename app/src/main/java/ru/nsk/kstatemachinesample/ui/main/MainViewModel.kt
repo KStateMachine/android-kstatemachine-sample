@@ -37,7 +37,7 @@ class MainViewModel : ViewModel() {
     val modelData: LiveData<ModelData> get() = _modelData
 
 
-    private val _modelEffect = SingleLiveEvent<ModelEffect>()
+    private val _modelEffect = SingleLiveEvent<ModelEffect>() // FIXME LiveData may skip events, should use Flow instead
     val modelEffect: LiveData<ModelEffect> get() = _modelEffect
 
     private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
