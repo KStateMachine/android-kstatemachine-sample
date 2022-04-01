@@ -15,6 +15,7 @@ import ru.nsk.kstatemachinesample.R
 import ru.nsk.kstatemachinesample.databinding.MainFragmentBinding
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
+import ru.nsk.kstatemachinesample.mvi.observe
 import ru.nsk.kstatemachinesample.utils.TouchListener
 import java.lang.System.lineSeparator
 
@@ -44,30 +45,32 @@ class MainFragment : Fragment() {
         )
         binding.reloadAmmoButton.setOnClickListener { viewModel.reloadAmmo() }
 
-        viewModel.modelData.observe(viewLifecycleOwner) { dataModel ->
-            dataModel.activeStates.let {
-                fun setDrawable(@DrawableRes id: Int, @DrawableRes idShooting: Int) =
-                    setHeroDrawable(if (it.hasState<Shooting>()) idShooting else id)
+        viewModel.observe(this, ::onStateChanged, ::onEffect)
+    }
 
-                when {
-                    it.hasState<Standing>() -> setDrawable(R.drawable.standing, R.drawable.standing_shooting)
-                    it.hasState<AirAttacking>() -> setDrawable(R.drawable.airattacking, R.drawable.airattacking_shooting)
-                    it.hasState<Ducking>() -> setDrawable(R.drawable.ducking, R.drawable.ducking_shooting)
-                    it.hasState<Jumping>() -> setDrawable(R.drawable.jumping, R.drawable.jumping_shooting)
-                }
-            }
+    private fun onStateChanged(state: ModelData) {
+        state.activeStates.let {
+            fun setDrawable(@DrawableRes id: Int, @DrawableRes idShooting: Int) =
+                setHeroDrawable(if (it.hasState<Shooting>()) idShooting else id)
 
-            dataModel.ammoLeft.let {
-                binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
+            when {
+                it.hasState<Standing>() -> setDrawable(R.drawable.standing, R.drawable.standing_shooting)
+                it.hasState<AirAttacking>() -> setDrawable(R.drawable.airattacking, R.drawable.airattacking_shooting)
+                it.hasState<Ducking>() -> setDrawable(R.drawable.ducking, R.drawable.ducking_shooting)
+                it.hasState<Jumping>() -> setDrawable(R.drawable.jumping, R.drawable.jumping_shooting)
             }
         }
 
-        viewModel.modelEffect.observe(viewLifecycleOwner) {
-            when(it) {
-                ModelEffect.AmmoDecremented -> log("*")
-                is ModelEffect.CurrentStateChanged -> log(getString(R.string.state, it.state::class.simpleName))
-                is ModelEffect.ControlEventChanged -> log(getString(R.string.event, it.event::class.simpleName))
-            }
+        state.ammoLeft.let {
+            binding.ammoTextView.text = getString(R.string.ammo, it.toInt())
+        }
+    }
+
+    private fun onEffect(effect: ModelEffect) {
+        when (effect) {
+            ModelEffect.AmmoDecremented -> log("*")
+            is ModelEffect.CurrentStateChanged -> log(getString(R.string.state, effect.state::class.simpleName))
+            is ModelEffect.ControlEventChanged -> log(getString(R.string.event, effect.event::class.simpleName))
         }
     }
 

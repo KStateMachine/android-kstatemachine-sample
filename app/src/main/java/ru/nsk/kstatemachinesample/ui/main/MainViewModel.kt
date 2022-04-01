@@ -1,17 +1,17 @@
 package ru.nsk.kstatemachinesample.ui.main
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import ru.nsk.kstatemachine.*
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
-import ru.nsk.kstatemachinesample.utils.SingleLiveEvent
+import ru.nsk.kstatemachinesample.mvi.MviModelHost
 import ru.nsk.kstatemachinesample.utils.singleShotTimer
 import ru.nsk.kstatemachinesample.utils.tickerFlow
 
@@ -27,18 +27,8 @@ sealed interface ModelEffect {
     class ControlEventChanged(val event: ControlEvent) : ModelEffect
 }
 
-class MainViewModel : ViewModel() {
-    private var data = ModelData(INITIAL_AMMO, emptyList())
-        set(value) {
-            field = value
-            _modelData.value = value
-        }
-    private val _modelData = MutableLiveData(data)
-    val modelData: LiveData<ModelData> get() = _modelData
-
-
-    private val _modelEffect = SingleLiveEvent<ModelEffect>() // FIXME LiveData may skip events, should use Flow instead
-    val modelEffect: LiveData<ModelEffect> get() = _modelEffect
+class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
+    override val model = model(viewModelScope, ModelData(INITIAL_AMMO, emptyList()))
 
     private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
         logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
@@ -89,7 +79,7 @@ class MainViewModel : ViewModel() {
 
             notShooting {
                 transition<FirePressEvent> {
-                    guard = { data.ammoLeft > 0u }
+                    guard = { state.ammoLeft > 0u }
                     targetState = shooting
                 }
             }
@@ -100,7 +90,7 @@ class MainViewModel : ViewModel() {
                 onEntry {
                     shootingTimer = viewModelScope.launch {
                         tickerFlow(SHOOTING_INTERVAL_MS).collect {
-                            if (data.ammoLeft == 0u)
+                            if (state.ammoLeft == 0u)
                                 sendEvent(OutOfAmmoEvent)
                             else
                                 decrementAmmo()
@@ -112,24 +102,26 @@ class MainViewModel : ViewModel() {
         }
 
         onStateChanged {
-            data = data.copy(activeStates = activeStates().filterIsInstance<HeroState>())
-            if (it is HeroState)
-                _modelEffect.value = ModelEffect.CurrentStateChanged(it)
+            intent {
+                state { copy(activeStates = activeStates().filterIsInstance<HeroState>()) }
+                if (it is HeroState)
+                    emitEffect(ModelEffect.CurrentStateChanged(it))
+            }
         }
     }
 
     fun sendEvent(event: ControlEvent) {
-        _modelEffect.value = ModelEffect.ControlEventChanged(event)
+        intent { emitEffect(ModelEffect.ControlEventChanged(event)) }
         machine.processEvent(event)
     }
 
-    fun reloadAmmo() {
-        data = data.copy(ammoLeft = INITIAL_AMMO)
+    fun reloadAmmo() = intent {
+        state { copy(ammoLeft = INITIAL_AMMO) }
     }
 
-    private fun decrementAmmo() {
-        data = data.copy(ammoLeft = data.ammoLeft - 1u)
-        _modelEffect.value = ModelEffect.AmmoDecremented
+    private fun decrementAmmo() = intent {
+        state { copy(ammoLeft = ammoLeft - 1u) }
+        emitEffect(ModelEffect.AmmoDecremented)
     }
 }
 
