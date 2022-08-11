@@ -34,35 +34,32 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
         logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
 
         state("Movement") {
-            val standing = addInitialState(Standing())
-            val jumping = addState(Jumping())
-            val ducking = addState(Ducking())
             val airAttacking = addState(AirAttacking())
 
-            standing {
-                transition<JumpPressEvent>("Jump") { targetState = jumping }
-                transition<DuckPressEvent>("Duck") { targetState = ducking }
+            addInitialState(Standing) {
+                transition<JumpPressEvent>("Jump", targetState = Jumping)
+                transition<DuckPressEvent>("Duck", targetState = Ducking)
             }
 
-            jumping {
+            addState(Jumping) {
                 onEntry {
                     viewModelScope.singleShotTimer(JUMP_DURATION_MS) {
                         sendEvent(JumpCompleteEvent)
                     }
                 }
-                transition<DuckPressEvent>("AirAttack") { targetState = airAttacking }
-                transition<JumpCompleteEvent>("Land after jump") { targetState = standing }
+                transition<DuckPressEvent>("AirAttack", targetState = airAttacking)
+                transition<JumpCompleteEvent>("Land after jump", targetState = Standing)
             }
 
-            ducking {
-                transition<DuckReleaseEvent>("StandUp") { targetState = standing }
+            addState(Ducking) {
+                transition<DuckReleaseEvent>("StandUp", targetState = Standing)
             }
 
             airAttacking {
                 onEntry { isDownPressed = true }
 
                 transitionOn<JumpCompleteEvent>("Land after attack") {
-                    targetState = { if (this@airAttacking.isDownPressed) ducking else standing }
+                    targetState = { if (this@airAttacking.isDownPressed) Ducking else Standing }
                 }
                 transition<DuckPressEvent>("Duck pressed") {
                     onTriggered { this@airAttacking.isDownPressed = true }
@@ -74,18 +71,17 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
         }
 
         state("Fire") {
-            val notShooting = addInitialState(NotShooting())
             val shooting = addState(Shooting())
 
-            notShooting {
+            addInitialState(NotShooting) {
                 transition<FirePressEvent> {
                     guard = { state.ammoLeft > 0u }
                     targetState = shooting
                 }
             }
             shooting {
-                transition<FireReleaseEvent> { targetState = notShooting }
-                transition<OutOfAmmoEvent> { targetState = notShooting }
+                transition<FireReleaseEvent>(targetState = NotShooting)
+                transition<OutOfAmmoEvent>(targetState = NotShooting)
 
                 onEntry {
                     shootingTimer = viewModelScope.launch {
@@ -136,13 +132,13 @@ sealed interface ControlEvent : Event {
 private object OutOfAmmoEvent : ControlEvent
 
 sealed class HeroState : DefaultState() {
-    class Standing : HeroState()
-    class Jumping : HeroState()
-    class Ducking : HeroState()
+    object Standing : HeroState()
+    object Jumping : HeroState()
+    object Ducking : HeroState()
     class AirAttacking : HeroState() {
         var isDownPressed = true
     }
-    class NotShooting : HeroState()
+    object NotShooting : HeroState()
     class Shooting : HeroState() {
         lateinit var shootingTimer: Job
     }
