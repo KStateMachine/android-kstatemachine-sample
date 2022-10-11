@@ -3,8 +3,6 @@ package ru.nsk.kstatemachinesample.ui.main
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -23,8 +21,8 @@ data class ModelData(val ammoLeft: UInt, val activeStates: List<HeroState>)
 
 sealed interface ModelEffect {
     object AmmoDecremented : ModelEffect
-    class CurrentStateChanged(val state: HeroState) : ModelEffect
-    class ControlEventChanged(val event: ControlEvent) : ModelEffect
+    class StateEntered(val state: HeroState) : ModelEffect
+    class ControlEventSent(val event: ControlEvent) : ModelEffect
 }
 
 class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
@@ -97,17 +95,21 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
             }
         }
 
-        onStateChanged {
+        onTransitionComplete { _, activeStates ->
             intent {
-                state { copy(activeStates = activeStates().filterIsInstance<HeroState>()) }
-                if (it is HeroState)
-                    emitEffect(ModelEffect.CurrentStateChanged(it))
+                state { copy(activeStates = activeStates.filterIsInstance<HeroState>()) }
+            }
+        }
+        onStateEntry { state ->
+            intent {
+                if (state is HeroState)
+                    emitEffect(ModelEffect.StateEntered(state))
             }
         }
     }
 
     fun sendEvent(event: ControlEvent) {
-        intent { emitEffect(ModelEffect.ControlEventChanged(event)) }
+        intent { emitEffect(ModelEffect.ControlEventSent(event)) }
         machine.processEvent(event)
     }
 

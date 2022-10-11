@@ -10,5 +10,5 @@ object Versions {
     const val lifecycle = "2.4.1"
     const val startup = "1.1.0"
     const val material = "1.5.0"
-    const val kStateMachine = "0.13.0"
+    const val kStateMachine = "0.16.0"
 }

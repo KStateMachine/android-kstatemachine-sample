@@ -69,8 +69,8 @@ class MainFragment : Fragment() {
     private fun onEffect(effect: ModelEffect) {
         when (effect) {
             ModelEffect.AmmoDecremented -> log("*")
-            is ModelEffect.CurrentStateChanged -> log(getString(R.string.state, effect.state::class.simpleName))
-            is ModelEffect.ControlEventChanged -> log(getString(R.string.event, effect.event::class.simpleName))
+            is ModelEffect.StateEntered -> log(getString(R.string.state, effect.state::class.simpleName))
+            is ModelEffect.ControlEventSent -> log(getString(R.string.event, effect.event::class.simpleName))
         }
     }
 
