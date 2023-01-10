@@ -26,7 +26,7 @@ sealed interface ModelEffect {
 }
 
 class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
-    override val model = model(viewModelScope, ModelData(INITIAL_AMMO, emptyList()))
+    override val model = model(viewModelScope, ModelData(INITIAL_AMMO, listOf(Standing)))
 
     private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
         logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }

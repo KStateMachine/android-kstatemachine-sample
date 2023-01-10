@@ -11,13 +11,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 class MviModel<State, Effect>(val scope: CoroutineScope, initialState: State) {
-    private var state = initialState
-        set(value) {
-            field = value
-            _stateFlow.value = value
-        }
-
-    private val _stateFlow = MutableStateFlow(state)
+    private val _stateFlow = MutableStateFlow(initialState)
     val stateFlow = _stateFlow.asStateFlow()
 
     private val _effectFlow = MutableSharedFlow<Effect>()
@@ -49,7 +43,6 @@ interface MviModelHost<State, Effect> {
     val state: State get() = model.stateFlow.value
 }
 
-
 fun <State, Effect> MviModelHost<State, Effect>.observe(
     lifecycleOwner: LifecycleOwner,
     onState: ((State) -> Unit)?,
@@ -61,4 +54,3 @@ fun <State, Effect> MviModelHost<State, Effect>.observe(
         onEffect?.let { launch { model.effectFlow.collect { onEffect(it) } } }
     }
 }
-
