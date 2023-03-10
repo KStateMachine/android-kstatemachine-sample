@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import ru.nsk.kstatemachine.*
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
@@ -28,8 +27,8 @@ sealed interface ModelEffect {
 class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
     override val model = model(viewModelScope, ModelData(INITIAL_AMMO, listOf(Standing)))
 
-    private val machine = createStateMachine("Hero", ChildMode.PARALLEL) {
-        logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it) }
+    private val machine = createStateMachineBlocking(viewModelScope, "Hero", ChildMode.PARALLEL) {
+        logger = StateMachine.Logger { Log.d(this@MainViewModel::class.simpleName, it()) }
 
         state("Movement") {
             val airAttacking = addState(AirAttacking())
@@ -108,8 +107,8 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
         }
     }
 
-    fun sendEvent(event: ControlEvent) {
-        intent { emitEffect(ModelEffect.ControlEventSent(event)) }
+    fun sendEvent(event: ControlEvent): Unit = intent {
+        emitEffect(ModelEffect.ControlEventSent(event))
         machine.processEvent(event)
     }
 

@@ -48,4 +48,5 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}")
     implementation("io.insert-koin:koin-androidx-viewmodel:${Versions.koin}")
     implementation("io.github.nsk90:kstatemachine:${Versions.kStateMachine}")
+    implementation("io.github.nsk90:kstatemachine-coroutines:${Versions.kStateMachine}")
 }
