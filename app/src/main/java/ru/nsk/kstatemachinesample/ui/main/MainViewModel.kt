@@ -102,13 +102,13 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
         onStateEntry { state ->
             intent {
                 if (state is HeroState)
-                    emitEffect(ModelEffect.StateEntered(state))
+                    sendEffect(ModelEffect.StateEntered(state))
             }
         }
     }
 
     fun sendEvent(event: ControlEvent): Unit = intent {
-        emitEffect(ModelEffect.ControlEventSent(event))
+        sendEffect(ModelEffect.ControlEventSent(event))
         machine.processEvent(event)
     }
 
@@ -118,7 +118,7 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
 
     private fun decrementAmmo() = intent {
         state { copy(ammoLeft = ammoLeft - 1u) }
-        emitEffect(ModelEffect.AmmoDecremented)
+        sendEffect(ModelEffect.AmmoDecremented)
     }
 }
 

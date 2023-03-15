@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -14,10 +15,10 @@ class MviModel<State, Effect>(val scope: CoroutineScope, initialState: State) {
     private val _stateFlow = MutableStateFlow(initialState)
     val stateFlow = _stateFlow.asStateFlow()
 
-    private val _effectFlow = MutableSharedFlow<Effect>()
-    val effectFlow = _effectFlow.asSharedFlow()
+    private val _effectChannel = Channel<Effect>()
+    val effectFlow = _effectChannel.receiveAsFlow()
 
-    suspend fun emitEffect(effect: Effect) = _effectFlow.emit(effect)
+    suspend fun sendEffect(effect: Effect) = _effectChannel.send(effect)
 
     fun state(block: State.() -> State) {
         _stateFlow.value = _stateFlow.value.block()
