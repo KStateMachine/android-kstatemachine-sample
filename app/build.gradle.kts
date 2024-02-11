@@ -33,6 +33,7 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    namespace = "ru.nsk.kstatemachinesample"
 }
 
 dependencies {
@@ -47,6 +48,6 @@ dependencies {
     implementation("com.google.android.material:material:${Versions.material}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}")
     implementation("io.insert-koin:koin-androidx-viewmodel:${Versions.koin}")
-    implementation("io.github.nsk90:kstatemachine:${Versions.kStateMachine}")
-    implementation("io.github.nsk90:kstatemachine-coroutines:${Versions.kStateMachine}")
+    implementation("io.github.nsk90:kstatemachine-jvm:${Versions.kStateMachine}")
+    implementation("io.github.nsk90:kstatemachine-coroutines-jvm:${Versions.kStateMachine}")
 }

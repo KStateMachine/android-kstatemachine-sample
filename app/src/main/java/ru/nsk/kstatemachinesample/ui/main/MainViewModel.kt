@@ -53,16 +53,16 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
             }
 
             airAttacking {
-                onEntry { isDownPressed = true }
+                onEntry { isDuckPressed = true }
 
                 transitionOn<JumpCompleteEvent>("Land after attack") {
-                    targetState = { if (this@airAttacking.isDownPressed) Ducking else Standing }
+                    targetState = { if (this@airAttacking.isDuckPressed) Ducking else Standing }
                 }
                 transition<DuckPressEvent>("Duck pressed") {
-                    onTriggered { this@airAttacking.isDownPressed = true }
+                    onTriggered { this@airAttacking.isDuckPressed = true }
                 }
                 transition<DuckReleaseEvent>("Duck released") {
-                    onTriggered { this@airAttacking.isDownPressed = false }
+                    onTriggered { this@airAttacking.isDuckPressed = false }
                 }
             }
         }
@@ -99,7 +99,7 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
                 state { copy(activeStates = activeStates.filterIsInstance<HeroState>()) }
             }
         }
-        onStateEntry { state ->
+        onStateEntry { state, _ ->
             intent {
                 if (state is HeroState)
                     sendEffect(ModelEffect.StateEntered(state))
@@ -137,7 +137,7 @@ sealed class HeroState : DefaultState() {
     object Jumping : HeroState()
     object Ducking : HeroState()
     class AirAttacking : HeroState() {
-        var isDownPressed = true
+        var isDuckPressed = true
     }
     object NotShooting : HeroState()
     class Shooting : HeroState() {
