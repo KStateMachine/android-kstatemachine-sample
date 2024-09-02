@@ -1,5 +1,7 @@
 # android-kstatemachine-sample
 
+![Build with Gradle](https://github.com/KStateMachine/android-kstatemachine-sample/workflows/Build%20and%20test%20with%20Gradle/badge.svg)
+
 ## Sample 2D shooter game
 
 This is a sample Android application showing [KStateMachine](https://github.com/nsk90/kstatemachine) library features.
