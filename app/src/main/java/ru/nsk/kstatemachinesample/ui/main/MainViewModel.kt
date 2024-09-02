@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import ru.nsk.kstatemachine.*
+import ru.nsk.kstatemachine.event.Event
+import ru.nsk.kstatemachine.state.*
+import ru.nsk.kstatemachine.statemachine.*
+import ru.nsk.kstatemachine.transition.onTriggered
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
 import ru.nsk.kstatemachinesample.mvi.MviModelHost
@@ -19,9 +22,9 @@ private const val SHOOTING_INTERVAL_MS = 50L
 data class ModelData(val ammoLeft: UInt, val activeStates: List<HeroState>)
 
 sealed interface ModelEffect {
-    object AmmoDecremented : ModelEffect
-    class StateEntered(val state: HeroState) : ModelEffect
-    class ControlEventSent(val event: ControlEvent) : ModelEffect
+    data object AmmoDecremented : ModelEffect
+    data class StateEntered(val state: HeroState) : ModelEffect
+    data class ControlEventSent(val event: ControlEvent) : ModelEffect
 }
 
 class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
@@ -94,7 +97,7 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
             }
         }
 
-        onTransitionComplete { _, activeStates ->
+        onTransitionComplete { activeStates, _ ->
             intent {
                 state { copy(activeStates = activeStates.filterIsInstance<HeroState>()) }
             }
@@ -130,6 +133,7 @@ sealed interface ControlEvent : Event {
     object FirePressEvent : ControlEvent
     object FireReleaseEvent : ControlEvent
 }
+
 private object OutOfAmmoEvent : ControlEvent
 
 sealed class HeroState : DefaultState() {
@@ -139,6 +143,7 @@ sealed class HeroState : DefaultState() {
     class AirAttacking : HeroState() {
         var isDuckPressed = true
     }
+
     object NotShooting : HeroState()
     class Shooting : HeroState() {
         lateinit var shootingTimer: Job
