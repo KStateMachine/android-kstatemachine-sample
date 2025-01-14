@@ -136,16 +136,16 @@ sealed interface ControlEvent : Event {
 
 private object OutOfAmmoEvent : ControlEvent
 
-sealed class HeroState : DefaultState() {
-    object Standing : HeroState()
-    object Jumping : HeroState()
-    object Ducking : HeroState()
-    class AirAttacking : HeroState() {
+sealed interface HeroState {
+    object Standing : DefaultState("Standing"), HeroState
+    object Jumping : DefaultState("Jumping"), HeroState
+    object Ducking : DefaultState("Ducking"), HeroState
+    class AirAttacking : DefaultState("AirAttacking"), HeroState {
         var isDuckPressed = true
     }
 
-    object NotShooting : HeroState()
-    class Shooting : HeroState() {
+    object NotShooting : DefaultState("NotShooting"), HeroState
+    class Shooting : DefaultState("Shooting"), HeroState {
         lateinit var shootingTimer: Job
     }
 }
