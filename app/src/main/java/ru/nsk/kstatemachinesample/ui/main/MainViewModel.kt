@@ -9,11 +9,13 @@ import ru.nsk.kstatemachine.event.Event
 import ru.nsk.kstatemachine.state.*
 import ru.nsk.kstatemachine.statemachine.*
 import ru.nsk.kstatemachine.transition.onTriggered
+import ru.nsk.kstatemachine.visitors.export.exportToPlantUmlBlocking
 import ru.nsk.kstatemachinesample.ui.main.ControlEvent.*
 import ru.nsk.kstatemachinesample.ui.main.HeroState.*
 import ru.nsk.kstatemachinesample.mvi.MviModelHost
 import ru.nsk.kstatemachinesample.utils.singleShotTimer
 import ru.nsk.kstatemachinesample.utils.tickerFlow
+import ru.nsk.kstatemachine.metainfo.buildExportMetaInfo
 
 private const val JUMP_DURATION_MS = 1000L
 private const val INITIAL_AMMO = 40u
@@ -60,6 +62,10 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
 
                 transitionOn<JumpCompleteEvent>("Land after attack") {
                     targetState = { if (this@airAttacking.isDuckPressed) Ducking else Standing }
+                    metaInfo = buildExportMetaInfo {
+                        addLazyStateResolutionHint("if isDuckPressed == true", lazyOf(Ducking))
+                        addLazyStateResolutionHint("if isDuckPressed == false", lazyOf(Standing))
+                    }
                 }
                 transition<DuckPressEvent>("Duck pressed") {
                     onTriggered { this@airAttacking.isDuckPressed = true }
@@ -108,6 +114,9 @@ class MainViewModel : MviModelHost<ModelData, ModelEffect>, ViewModel() {
                     sendEffect(ModelEffect.StateEntered(state))
             }
         }
+    }.also {
+        val text = it.exportToPlantUmlBlocking(showEventLabels = true, unsafeCallConditionalLambdas = true)
+        Log.d(this::class.simpleName, text)
     }
 
     fun sendEvent(event: ControlEvent): Unit = intent {
