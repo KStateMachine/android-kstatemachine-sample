@@ -1,5 +1,8 @@
 # android-kstatemachine-sample
 
+## Deprecated
+This sample will not receive any updates. Use modern [compose sample](https://github.com/KStateMachine/compose-kstatemachine-sample) instead.
+
 ![Build with Gradle](https://github.com/KStateMachine/android-kstatemachine-sample/workflows/Build%20and%20test%20with%20Gradle/badge.svg)
 
 ## Sample 2D shooter game
